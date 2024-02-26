@@ -46,8 +46,7 @@ void CommonCode::sendFile(const string& filename, const string& senderFolder) co
     sendChunkedData(data.c_str(), data.size(), 1024);
 }
 
-void CommonCode::insertFile() const {
-    string filename = receiveChunkedData();
+void CommonCode::insertFile(const string& filename) const {
     string data = receiveChunkedData();
     if (data == "File not found") {
         return;
@@ -56,4 +55,3 @@ void CommonCode::insertFile() const {
     file << data;
     file.close();
 }
-

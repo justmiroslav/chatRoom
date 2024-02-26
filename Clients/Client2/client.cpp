@@ -16,8 +16,10 @@ void Client::start() {
     CommonCode commonCode(clientSocket, clientFolder);
     while (true) {
         string roomSelection, lowerRoomSelection;
-        string roomData = commonCode.receiveChunkedData();
-        cout << roomData << endl;
+        if (!isRoomSelected) {
+            string roomData = commonCode.receiveChunkedData();
+            cout << roomData << endl;
+        }
         getline(cin, roomSelection);
         transform(roomSelection.begin(), roomSelection.end(), back_inserter(lowerRoomSelection), ::tolower);
         commonCode.sendChunkedData(lowerRoomSelection.c_str(), lowerRoomSelection.size(), 10);
@@ -31,8 +33,9 @@ void Client::start() {
             isRunning = true;
             thread receiveThread(&Client::receiveData, this, ref(commonCode));
             sendData(commonCode);
-            receiveThread.join();
+            isRoomSelected = true;
             cout << "Exiting " + roomSelection + "..." << endl;
+            receiveThread.join();
         }
     }
     closesocket(clientSocket);
@@ -42,20 +45,26 @@ void Client::start() {
 void Client::sendData(CommonCode& commonCode) {
     while (isRunning) {
         int command;
-        cout << "Enter command (1-MESSAGE/2-FILE/3-EXIT):" << endl;
+        cout << "Enter command (1-MESSAGE/2-FILE/3-EXIT/4-YES/5-NO):" << endl;
         cin >> command;
         cin.ignore();
-        if (command == EXIT_ || command == MESSAGE_ || command == FILE_) {
-            send(clientSocket, reinterpret_cast<const char*>(&command), sizeof(int), 0);
-            if (command == EXIT_) {
-                isRunning = false;
-                break;
-            }
+        send(clientSocket, reinterpret_cast<const char*>(&command), sizeof(int), 0);
+        if (command == EXIT_) {
+            isRunning = false;
+            break;
+        }
+        if (command == MESSAGE_ || command == FILE_) {
             string input;
             string prompt = (command == MESSAGE_) ? "Enter message:" : "Enter filename:";
             cout << prompt << endl;
             getline(cin, input);
             commonCode.sendChunkedData(input.c_str(), input.size(), 10);
+        } else if (command == YES_) {
+            commonCode.sendChunkedData("yes", strlen("yes"), 10);
+            isFile = true;
+        } else if (command == NO_) {
+            commonCode.sendChunkedData("no", strlen("no"), 10);
+            isFile = false;
         } else {
             cout << "Invalid command" << endl;
         }
@@ -64,18 +73,13 @@ void Client::sendData(CommonCode& commonCode) {
 
 void Client::receiveData(CommonCode& commonCode) {
     while (isRunning) {
-        int command;
-        string input, lowerInput;
-        recv(clientSocket, reinterpret_cast<char *>(&command), sizeof(int), 0);
         string message = commonCode.receiveChunkedData();
-        cout << message << endl;
-        if (command == FILE_) {
-            getline(cin, input);
-            commonCode.sendChunkedData(input.c_str(), input.size(), 10);
-            transform(input.begin(), input.end(), back_inserter(lowerInput), ::tolower);
-            if (lowerInput == "yes") {
-                commonCode.insertFile();
-            }
+        if (!isFile) {
+            lock_guard<mutex> lock(m);
+            cout << message << endl;
+        } else {
+            commonCode.insertFile(message);
+            isFile = false;
         }
     }
 }

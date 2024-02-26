@@ -3,8 +3,8 @@ project(Client1)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(Client1 main.cpp C:/Users/Admin/CLionProjects/ChatRoom/Server/common.cpp
+add_executable(Client1 main.cpp C:/Users/miros/CLionProjects/chatRoom/Server/common.cpp
         client.h
         client.cpp)
 target_link_libraries(Client1 wsock32 ws2_32)
-target_include_directories(Client1 PRIVATE C:/Users/Admin/CLionProjects/ChatRoom/Server)
+target_include_directories(Client1 PRIVATE C:/Users/miros/CLionProjects/chatRoom/Server)

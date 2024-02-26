@@ -9,7 +9,9 @@ using namespace std;
 enum Commands {
     MESSAGE_ = 1,
     FILE_ = 2,
-    EXIT_ = 3
+    EXIT_ = 3,
+    YES_ = 4,
+    NO_ = 5
 };
 
 class CommonCode {
@@ -19,7 +21,7 @@ public:
     void sendChunkedData(const char* data, int dataSize, int chunkSize) const;
     string receiveChunkedData() const;
     void sendFile(const string& filename, const string& senderFolder) const;
-    void insertFile() const;
+    void insertFile(const string& filename) const;
 private:
     SOCKET s;
     const string& clientFolder;

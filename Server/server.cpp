@@ -44,12 +44,12 @@ void Server::start() {
 }
 
 void Server::handleClient(SOCKET clientSocket) {
-    string lowerRoomSelection;
     pair<string, int> clientData = getClientData(clientSocket);
     string clientFolder = clientData.first;
     int clientNumber = clientData.second;
     CommonCode commonCode(clientSocket, clientFolder);
     while (true) {
+        string lowerRoomSelection;
         commonCode.sendChunkedData(roomData().c_str(), roomData().size(), 10);
         string roomSelection = commonCode.receiveChunkedData();
         transform(roomSelection.begin(), roomSelection.end(), back_inserter(lowerRoomSelection), ::tolower);
@@ -79,6 +79,10 @@ void Server::processCommands(CommonCode& commonCode, const string& roomSelection
             addToQueue(commonCode, roomSelection, clientSocket, MESSAGE_);
         } else if (command == FILE_) {
             addToQueue(commonCode, roomSelection, clientSocket, FILE_);
+        } else if (command == YES_) {
+            addToQueue(commonCode, roomSelection, clientSocket, YES_);
+        } else if (command == NO_) {
+            addToQueue(commonCode, roomSelection, clientSocket, NO_);
         } else {
             cout << rooms[roomSelection][clientSocket].second << " has left " << roomSelection << endl;
             rooms[roomSelection].erase(clientSocket);
@@ -110,22 +114,26 @@ void Server::processQueue() {
 }
 
 void Server::processEntry(const string& room, SOCKET clientSocket, int command, const string& prompt) {
-    string lowerResponse;
     for (auto& user : rooms[room]) {
+        CommonCode commonCode(user.first, user.second.first);
         if (user.first != clientSocket) {
-            CommonCode commonCode(user.first, user.second.first);
-            send(user.first, reinterpret_cast<const char*>(&command), sizeof(int), 0);
             if (command == MESSAGE_) {
                 string message = rooms[room][clientSocket].second + ": " + prompt;
                 commonCode.sendChunkedData(message.c_str(), message.size(), 10);
-            } else {
+            } else if (command == FILE_) {
                 string filePrompt = rooms[room][clientSocket].second + " wants to send " + prompt + " file, do you want to receive?";
+                dataToSend[room] = {rooms[room][clientSocket].first, prompt};
+                cout << rooms[room][clientSocket].second << " wants to send file" << endl;
                 commonCode.sendChunkedData(filePrompt.c_str(), filePrompt.size(), 10);
-                string response = commonCode.receiveChunkedData();
-                transform(response.begin(), response.end(), back_inserter(lowerResponse), ::tolower);
-                if (lowerResponse == "yes") {
-                    commonCode.sendFile(prompt, rooms[room][clientSocket].first);
-                }
+            }
+        } else {
+            if (command == YES_) {
+                string senderFolder = dataToSend[room].first;
+                string filename = dataToSend[room].second;
+                cout << user.second.second << " has accepted the file transfer" << endl;
+                commonCode.sendFile(filename, senderFolder);
+            } else if (command == NO_) {
+                cout << user.second.second << " has rejected the file transfer" << endl;
             }
         }
     }

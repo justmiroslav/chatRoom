@@ -4,6 +4,7 @@
 #include <cctype>
 #include <algorithm>
 #include <atomic>
+#include <mutex>
 
 class Client {
 public:
@@ -13,8 +14,11 @@ public:
     void receiveData(CommonCode& commonCode);
 
 private:
+    mutex m;
     atomic<bool> isRunning;
+    atomic<bool> isFile = false;
+    atomic<bool> isRoomSelected = false;
     SOCKET clientSocket;
     sockaddr_in serverAddr;
-    const string clientFolder = "C:/Users/Admin/CLionProjects/ChatRoom/Clients/Client3";
+    const string clientFolder = "C:/Users/miros/CLionProjects/chatRoom/Clients/Client3";
 };

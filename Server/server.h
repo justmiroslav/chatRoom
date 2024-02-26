@@ -29,9 +29,9 @@ private:
     SOCKET serverSocket;
     sockaddr_in serverAddr;
     map<string, map<SOCKET, pair<string, string>>> rooms;
+    map<string, pair<string, string>> dataToSend;
     int port = 1337;
     int clientCounter = 0;
-
     string roomData();
     static pair<string, int> getClientData(SOCKET clientSocket);
 };
